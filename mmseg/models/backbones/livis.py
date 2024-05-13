@@ -21,7 +21,7 @@ class ConvBN(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        return self.norm(x) if hasattr("norm") else x
+        return self.norm(x) if hasattr(self, "norm") else x
 
 
 class Block(BaseModule):
