@@ -9,12 +9,11 @@
 
 
 cd /dev/shm/
-mkdir ade
-cp /work/smile/xuma/data/ade/ADEChallengeData2016.zip ade/
-cd ade/
+cp /work/smile/xuma/data/ade/ADEChallengeData2016.zip .
 unzip ADEChallengeData2016.zip
 rm ADEChallengeData2016.zip
 cd /scratch/ma.xu1/mmsegmentation
+ln -s /dev/shm/ADEChallengeData2016 data/ade
 source activate /work/smile/xuma/conda/envs/mmseg
 
 sh tools/dist_train.sh configs/livis/segformer_livis_c_run2.py 8 --work-dir work_dirs/livis_c_2

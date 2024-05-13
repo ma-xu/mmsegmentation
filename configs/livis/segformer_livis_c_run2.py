@@ -37,4 +37,4 @@ param_scheduler = [
 train_dataloader = dict(batch_size=4, num_workers=4)
 val_dataloader = dict(batch_size=1, num_workers=4)
 test_dataloader = val_dataloader
-data_root = '/dev/shm/ade/ADEChallengeData2016'
+# data_root = '/dev/shm/ade/ADEChallengeData2016'
