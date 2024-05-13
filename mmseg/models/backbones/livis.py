@@ -15,11 +15,13 @@ from mmseg.registry import MODELS
 class ConvBN(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True, **kwargs):
         super().__init__()
-        self.add_module('conv', torch.nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation, groups))
+        self.conv = torch.nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation, groups)
         if with_bn:
-            self.add_module('norm', torch.nn.BatchNorm2d(out_planes))
-            torch.nn.init.constant_(self.norm.weight, 1)
-            torch.nn.init.constant_(self.norm.bias, 0)
+            self.norm = torch.nn.BatchNorm2d(out_planes)
+
+    def forward(self, x):
+        x = self.conv(x)
+        return self.norm(x) if hasattr("norm") else x
 
 
 class Block(BaseModule):
