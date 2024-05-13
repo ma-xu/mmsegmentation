@@ -12,7 +12,7 @@ from mmengine.model import BaseModule
 from mmseg.registry import MODELS
 
 
-class ConvBN(nn.Module):
+class ConvBN(BaseModule):
     def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True, **kwargs):
         super().__init__()
         self.conv = torch.nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation, groups)
@@ -80,9 +80,10 @@ class LiViS(BaseModule):
                  out_indices=(0, 1, 2, 3),
                  norm_eval=False,
                  pretrained=None,
+                 init_cfg=None,
                  **kwargs
                  ):
-        super().__init__()
+        super().__init__(init_cfg=init_cfg)
         self.pretrained = pretrained
         self.norm_eval = norm_eval
         self.out_indices = out_indices
