@@ -9,10 +9,11 @@ from timm.models.registry import register_model
 import numpy as np
 from mmengine.utils.dl_utils.parrots_wrapper import _BatchNorm
 from mmengine.model import BaseModule
+from mmseg.registry import MODELS
 
 
-class ConvBN(torch.nn.Sequential):
-    def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True):
+class ConvBN(BaseModule):
+    def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True, **kwargs):
         super().__init__()
         self.add_module('conv', torch.nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation, groups))
         if with_bn:
@@ -21,7 +22,7 @@ class ConvBN(torch.nn.Sequential):
             torch.nn.init.constant_(self.norm.bias, 0)
 
 
-class Block(nn.Module):
+class Block(BaseModule):
     def __init__(self, dim, drop_path=0., layer_scale_init_value=0.,
                  hidden_len=49,  act_layer=nn.GELU, mlp_ratio=4,
                  **kwargs):
@@ -68,7 +69,7 @@ class Block(nn.Module):
 
 
 @MODELS.register_module()
-class LiViS(nn.Module):
+class LiViS(BaseModule):
     def __init__(self, in_chans=3,
                  act_layer=nn.ReLU, hidden_len=49, mlp_ratio=6,
                  depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.1,
