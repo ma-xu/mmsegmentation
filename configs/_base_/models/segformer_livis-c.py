@@ -20,6 +20,7 @@ model = dict(
         hidden_len=16,
         drop_path_rate=0.1,
         out_indices=(0, 1, 2, 3),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=False,
     ),
     decode_head=dict(

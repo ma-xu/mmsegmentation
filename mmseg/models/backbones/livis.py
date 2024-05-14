@@ -8,16 +8,20 @@ from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
 import numpy as np
 from mmengine.utils.dl_utils.parrots_wrapper import _BatchNorm
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmengine.model import BaseModule
 from mmseg.registry import MODELS
 
 
 class ConvBN(BaseModule):
-    def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True, **kwargs):
+    def __init__(self, in_planes, out_planes, kernel_size=1, stride=1, padding=0, dilation=1, groups=1, with_bn=True,
+                 norm_cfg=dict(type='SyncBN', requires_grad=True),
+                 **kwargs):
         super().__init__()
         self.conv = torch.nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, dilation, groups)
         if with_bn:
-            self.norm = torch.nn.BatchNorm2d(out_planes)
+            # self.norm = torch.nn.BatchNorm2d(out_planes)
+            self.norm = build_norm_layer(norm_cfg, out_planes)[1]
 
     def forward(self, x):
         x = self.conv(x)
@@ -27,23 +31,24 @@ class ConvBN(BaseModule):
 class Block(BaseModule):
     def __init__(self, dim, drop_path=0., layer_scale_init_value=0.,
                  hidden_len=49,  act_layer=nn.GELU, mlp_ratio=4,
+                 norm_cfg=dict(type='SyncBN', requires_grad=True),
                  **kwargs):
         super().__init__()
         self.dim = dim
-        self.local_conv = ConvBN(dim, dim, kernel_size=3, stride=1, padding=1, groups=dim,with_bn=True)
+        self.local_conv = ConvBN(dim, dim, kernel_size=3, stride=1, padding=1, groups=dim,with_bn=True, norm_cfg=norm_cfg)
         self.act=act_layer()
         self.hidden_len = hidden_len
         self.mlp_ratio = mlp_ratio
-        self.q1 = ConvBN(dim, dim, with_bn=True)
-        self.q2 = ConvBN(dim, hidden_len, with_bn=True)
-        self.k = ConvBN(dim, dim, with_bn=True)
-        self.v = ConvBN(dim, int(self.mlp_ratio * dim), with_bn=True)
+        self.q1 = ConvBN(dim, dim, with_bn=True, norm_cfg=norm_cfg)
+        self.q2 = ConvBN(dim, hidden_len, with_bn=True, norm_cfg=norm_cfg)
+        self.k = ConvBN(dim, dim, with_bn=True, norm_cfg=norm_cfg)
+        self.v = ConvBN(dim, int(self.mlp_ratio * dim), with_bn=True, norm_cfg=norm_cfg)
         # self.qkv = ConvBN(dim, (dim + hidden_len + dim + int(self.mlp_ratio * dim)), with_bn=True)
-        self.down_k=ConvBN(dim, dim, kernel_size=3, stride=2, padding=1, groups=dim, with_bn=True)
+        self.down_k=ConvBN(dim, dim, kernel_size=3, stride=2, padding=1, groups=dim, with_bn=True, norm_cfg=norm_cfg)
         self.mlp_ratio=mlp_ratio
 
-        self.qk_mlp = ConvBN(dim, int(self.mlp_ratio * dim), with_bn=True)
-        self.mlp = ConvBN(int(self.mlp_ratio * dim), dim, with_bn=True)
+        self.qk_mlp = ConvBN(dim, int(self.mlp_ratio * dim), with_bn=True, norm_cfg=norm_cfg)
+        self.mlp = ConvBN(int(self.mlp_ratio * dim), dim, with_bn=True, norm_cfg=norm_cfg)
         self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((1,dim,1,1)),
                                     requires_grad=True) if layer_scale_init_value > 0 else None
         self.beta = nn.Parameter( torch.ones((1,dim,1,1)), requires_grad=True)
@@ -80,6 +85,7 @@ class LiViS(BaseModule):
                  out_indices=(0, 1, 2, 3),
                  norm_eval=False,
                  pretrained=None,
+                 norm_cfg=dict(type='SyncBN', requires_grad=True),
                  init_cfg=None,
                  **kwargs
                  ):
@@ -89,13 +95,13 @@ class LiViS(BaseModule):
         self.out_indices = out_indices
         self.downsample_layers = nn.ModuleList() # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
-            ConvBN(in_chans, 64, kernel_size=5, stride=2, padding=2),
+            ConvBN(in_chans, 64, kernel_size=5, stride=2, padding=2, norm_cfg=norm_cfg),
             act_layer(),
-            ConvBN(64, dims[0], kernel_size=5, stride=2, padding=2),
+            ConvBN(64, dims[0], kernel_size=5, stride=2, padding=2, norm_cfg=norm_cfg),
         )
         self.downsample_layers.append(stem)
         for i in range(3):
-            downsample_layer = ConvBN(dims[i], dims[i+1], kernel_size=5, stride=2, padding=2)
+            downsample_layer = ConvBN(dims[i], dims[i+1], kernel_size=5, stride=2, padding=2, norm_cfg=norm_cfg)
             self.downsample_layers.append(downsample_layer)
 
         self.stages = nn.ModuleList() # 4 feature resolution stages, each consisting of multiple residual blocks
@@ -107,6 +113,7 @@ class LiViS(BaseModule):
                 act_layer=act_layer, hidden_len=hidden_len,
                 mlp_ratio=mlp_ratio,
                 drop_path=dp_rates[cur + j],
+                norm_cfg=norm_cfg,
                 layer_scale_init_value=layer_scale_init_value) for j in range(depths[i])]
             )
             self.stages.append(stage)
