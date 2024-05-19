@@ -5,12 +5,6 @@ _base_ = [
 crop_size = (512, 512)
 data_preprocessor = dict(size=crop_size)
 checkpoint = 'https://github.com/ma-xu/pointsMLP/releases/download/livis/livis_c2_81.0.pth.tar'  # noqa
-model = dict(
-    data_preprocessor=data_preprocessor,
-    backbone=dict(init_cfg=dict(type='Pretrained', checkpoint=checkpoint)),
-    decode_head=dict(num_classes=150))
-
-
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 data_preprocessor = dict(
     type='SegDataPreProcessor',
@@ -34,6 +28,7 @@ model = dict(
         out_indices=(0, 1, 2, 3),
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=False,
+        init_cfg=dict(type='Pretrained', checkpoint=checkpoint)
     ),
     decode_head=dict(
         type='SegformerHead',
