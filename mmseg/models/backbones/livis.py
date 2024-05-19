@@ -58,10 +58,12 @@ class Block(BaseModule):
         input = x
         x = self.act(self.local_conv(x))
         B,C,H,W = x.shape
+        HW = H*W
         q1,q2,k,v = self.act(self.q1(x)), self.act(self.q2(x)), self.k(x), self.act(self.v(x))
         k = self.down_k(k)
-        _,_,H_k,W_k = k.shape
-        q = (q1.reshape(B,C,H*W))@(q2.reshape(B,self.hidden_len,H*W).transpose(-2,-1)) # [b,c,d]
+        # _,_,H_k,W_k = k.shape
+        q = (q1.reshape(B,C,HW))@(q2.reshape(B,self.hidden_len,HW).transpose(-2,-1)) # [b,c,d]
+        q = q / HW
         # # new implementation
         # qk = q.mean(dim=-1).view(B,C,1,1) * k # [b,c,h'*w']
         qk = q.mean(dim=-1, keepdim=True).unsqueeze(dim=-1) * k # [b,c,h'*w'] # slightly faster ~0.05 ms
