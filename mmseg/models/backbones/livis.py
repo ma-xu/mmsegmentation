@@ -51,7 +51,6 @@ class Block(BaseModule):
         self.mlp = ConvBN(int(self.mlp_ratio * dim), dim, with_bn=True, norm_cfg=norm_cfg)
         self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((1,dim,1,1)),
                                     requires_grad=True) if layer_scale_init_value > 0 else None
-        self.beta = nn.Parameter( torch.ones((1,dim,1,1)), requires_grad=True)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
 
     def forward(self, x):
@@ -73,7 +72,7 @@ class Block(BaseModule):
         x = self.mlp(x)
         if self.gamma is not None:
             x = self.gamma * x
-        x = self.beta * input + self.drop_path(x)
+        x = input + self.drop_path(x)
         return x
 
 
